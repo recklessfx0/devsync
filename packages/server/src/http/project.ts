@@ -5,6 +5,7 @@
  * the body is read; the domain checks it again.
  */
 import {
+  type Action,
   AgentInput,
   AgentList,
   AgentMessage,
@@ -12,7 +13,6 @@ import {
   AgentWithToken,
   Comment,
   CommentInput,
-  can,
   MemberList,
   PullRequestLink,
   PullRequestList,
@@ -28,6 +28,7 @@ import {
 } from "@devsync/schemas";
 import { Hono, type MiddlewareHandler } from "hono";
 import { listAgents, registerAgent, revokeAgent, rotateAgent } from "../domain/agents";
+import { requireRole } from "../domain/common";
 import { listPullRequests } from "../domain/pull-requests";
 import { approveRun, cancelRun, listRuns, rejectRun, requestRun, runSetup } from "../domain/runs";
 import { publishSignal } from "../domain/signals";
@@ -39,23 +40,13 @@ import {
   listTasks,
   updateTask,
 } from "../domain/tasks";
-import { DevSyncError, type DevSyncHost, type ProjectEnv } from "../host";
+import type { DevSyncHost, ProjectEnv } from "../host";
 import { answer, errorHandler, noStore, readBody, readQuery } from "./errors";
 
-const REFUSED = {
-  "task.write":
-    "Your role can't change this project's tasks. Ask an Owner or Admin for a role that can.",
-  "agent.manage": "Only an Owner or Admin can register, rotate or revoke agents. Ask one of them.",
-  "run.request": "Your role can't ask for managed runs. Ask an Owner or Admin for a role that can.",
-  "run.decide": "Only an Owner, Admin or Approver can approve or reject a run. Ask one of them.",
-} as const;
-
-/** Refuses a member whose role may not do `action`. */
-function allow(action: keyof typeof REFUSED): MiddlewareHandler<ProjectEnv> {
+/** Refuses a member whose role may not do `action`, in the domain's words. */
+function allow(action: Action): MiddlewareHandler<ProjectEnv> {
   return async (c, next) => {
-    if (!can(c.get("module").member.role, action)) {
-      throw new DevSyncError("forbidden", REFUSED[action]);
-    }
+    requireRole(c.get("module").member.role, action);
     await next();
   };
 }

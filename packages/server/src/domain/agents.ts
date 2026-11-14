@@ -3,14 +3,7 @@
  * once and DevSync keeps only its SHA-256. A token lasts 24 hours and can be rotated or revoked.
  */
 import { createHash, randomBytes } from "node:crypto";
-import {
-  type Agent,
-  AgentInput,
-  type AgentList,
-  type AgentWithToken,
-  can,
-  Id,
-} from "@devsync/schemas";
+import { type Agent, AgentInput, type AgentList, type AgentWithToken, Id } from "@devsync/schemas";
 import { and, desc, eq, gt, isNull } from "drizzle-orm";
 import { type AgentRow, agent } from "../db";
 import {
@@ -20,7 +13,7 @@ import {
   type DevSyncHost,
   type ProjectContext,
 } from "../host";
-import { parse, REFUSAL } from "./common";
+import { parse, REFUSAL, requireRole } from "./common";
 
 /** How long a token lasts from its registration or rotation. */
 const AGENT_TOKEN_LIFETIME_MS = 24 * 60 * 60 * 1000;
@@ -34,12 +27,7 @@ function hashToken(token: string): string {
 }
 
 function requireManage(ctx: ProjectContext): void {
-  if (!can(ctx.member.role, "agent.manage")) {
-    throw new DevSyncError(
-      "forbidden",
-      "Only an Owner or Admin can register, rotate or revoke agents. Ask one of them.",
-    );
-  }
+  requireRole(ctx.member.role, "agent.manage");
 }
 
 /** An agent id from a path: anything but a UUID is no agent of the project's. */

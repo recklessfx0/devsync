@@ -6,6 +6,7 @@
  */
 import type { Context, ErrorHandler, MiddlewareHandler } from "hono";
 import type { z } from "zod";
+import { parse } from "../domain/common";
 import { DevSyncError, type DevSyncHost, ERROR_STATUS } from "../host";
 
 /** What an unexpected failure answers: no detail of it. */
@@ -52,29 +53,6 @@ export const noStore: MiddlewareHandler = async (c, next) => {
   c.res.headers.set("Cache-Control", "no-store");
 };
 
-/**
- * Parses `input` with `schema`, refusing it as `invalid` with the fields' names (an unknown field
- * by its own name), never their values.
- */
-export function parseInput<T extends z.ZodType>(schema: T, input: unknown): z.output<T> {
-  const result = schema.safeParse(input);
-  if (result.success) return result.data;
-  const fields = [
-    ...new Set(
-      result.error.issues.flatMap((issue) =>
-        issue.code === "unrecognized_keys"
-          ? issue.keys.map((key) => [...issue.path, key].join("."))
-          : [issue.path.join(".") || "body"],
-      ),
-    ),
-  ];
-  throw new DevSyncError(
-    "invalid",
-    `Check ${fields.length === 1 ? "this field" : "these fields"} and try again: ${fields.join(", ")}.`,
-    fields,
-  );
-}
-
 /** The request's JSON body, parsed with `schema`. */
 export async function readBody<T extends z.ZodType>(c: Context, schema: T): Promise<z.output<T>> {
   let body: unknown;
@@ -83,12 +61,12 @@ export async function readBody<T extends z.ZodType>(c: Context, schema: T): Prom
   } catch {
     throw new DevSyncError("invalid", "Send the request's body as JSON and try again.", ["body"]);
   }
-  return parseInput(schema, body);
+  return parse(schema, body);
 }
 
 /** The request's query string, parsed with `schema`. */
 export function readQuery<T extends z.ZodType>(c: Context, schema: T): z.output<T> {
-  return parseInput(schema, c.req.query());
+  return parse(schema, c.req.query());
 }
 
 /** Answers `value` parsed with `schema`: only the contract's fields leave DevSync. */

@@ -37,11 +37,18 @@ import {
   type ErrorCode,
   type GithubFact,
   type GithubFailure,
-  type Member,
   type ProjectContext,
   type ProjectRef,
 } from "../host";
-import { REFUSAL, requireWritable } from "./common";
+import {
+  memberAuthor,
+  namesOf,
+  noSuchTask,
+  requireRole,
+  requireWritable,
+  taskIdOf,
+  taskIn,
+} from "./common";
 import { outbox } from "./outbox";
 import { writePullRequestLink } from "./tasks";
 
@@ -69,8 +76,6 @@ const LIST_LIMIT = 50;
 const SWEEP_BATCH = 100;
 /** The largest `result.json` DevSync reads: 1,000 paths of 400 characters fit well within it. */
 const RESULT_MAX_BYTES = 1024 * 1024;
-/** The name shown for a member who has left the workspace. */
-const FORMER_MEMBER = "Former member";
 
 /** What the setup asks the user to add, word for word in the runs section and in a refusal. */
 export const SETUP_STEP = {
@@ -80,8 +85,6 @@ export const SETUP_STEP = {
 
 const REFUSED = {
   noSuchRun: "There's no such run in this project. Reload the task.",
-  request: "Your role can't ask for managed runs. Ask an Owner or Admin for a role that can.",
-  decide: "Only an Owner, Admin or Approver can approve or reject a run. Ask one of them.",
   cancel:
     "Only the member who asked for this run, or an Owner, Admin or Approver, can cancel it. Ask one of them.",
   notReady: "Only a Ready task can have a run. Move the task to Ready, then ask for a run.",
@@ -152,17 +155,8 @@ export function failureMessage(failure: RunFailure, runId: string): string {
 
 const ChangedFiles = z.array(z.string());
 
-function namesOf(members: Member[]): Map<string, string> {
-  return new Map(members.map((m) => [m.userId, m.name]));
-}
-
 /** A run row as `Run`; `names` are the workspace's members' by user id. */
 function toRun(row: RunRow, names: Map<string, string>, fullName: string): Run {
-  const member = (userId: string) => ({
-    kind: "member" as const,
-    userId,
-    name: names.get(userId) ?? FORMER_MEMBER,
-  });
   const failure = RunFailure.safeParse(row.failure);
   const usage = RunUsage.safeParse(row.tokenUsage);
   const changedFiles = ChangedFiles.safeParse(row.changedFiles);
@@ -171,8 +165,8 @@ function toRun(row: RunRow, names: Map<string, string>, fullName: string): Run {
     taskId: row.taskId,
     revision: row.revision,
     status: row.status,
-    requestedBy: member(row.requestedByUserId),
-    decidedBy: row.decidedByUserId === null ? null : member(row.decidedByUserId),
+    requestedBy: memberAuthor(names, row.requestedByUserId),
+    decidedBy: row.decidedByUserId === null ? null : memberAuthor(names, row.decidedByUserId),
     createdAt: row.createdAt.toISOString(),
     decidedAt: row.decidedAt?.toISOString() ?? null,
     startedAt: row.startedAt?.toISOString() ?? null,
@@ -196,25 +190,12 @@ async function answerRun(host: DevSyncHost, project: ProjectRef, row: RunRow): P
 
 // --- Checks -------------------------------------------------------------------------------------
 
-type Scope = Pick<ProjectRef, "workspaceId" | "projectId">;
-
-function noSuchTask(): DevSyncError {
-  return new DevSyncError("not-found", REFUSAL.noSuchTask);
-}
-
 function noSuchRun(): DevSyncError {
   return new DevSyncError("not-found", REFUSED.noSuchRun);
 }
 
-function taskIn(scope: Scope, taskId: string): SQL {
-  return and(
-    eq(task.id, taskId),
-    eq(task.projectId, scope.projectId),
-    eq(task.workspaceId, scope.workspaceId),
-  ) as SQL;
-}
-
-function runIn(scope: Scope, runId: string): SQL {
+/** The run `runId` of the project. */
+function runIn(scope: Pick<ProjectRef, "workspaceId" | "projectId">, runId: string): SQL {
   return and(
     eq(run.id, runId),
     eq(run.projectId, scope.projectId),
@@ -389,8 +370,8 @@ export async function listRuns(
   taskId: string,
 ): Promise<RunList> {
   const { project } = ctx;
-  if (!Id.safeParse(taskId).success) throw noSuchTask();
-  const [found] = await host.db.select({ id: task.id }).from(task).where(taskIn(project, taskId));
+  const id = taskIdOf(taskId);
+  const [found] = await host.db.select({ id: task.id }).from(task).where(taskIn(project, id));
   if (!found) throw noSuchTask();
   const [rows, members] = await Promise.all([
     host.db
@@ -398,7 +379,7 @@ export async function listRuns(
       .from(run)
       .where(
         and(
-          eq(run.taskId, taskId),
+          eq(run.taskId, id),
           eq(run.projectId, project.projectId),
           eq(run.workspaceId, project.workspaceId),
         ),
@@ -440,21 +421,21 @@ export async function requestRun(
 ): Promise<Run> {
   const { project, member } = ctx;
   requireWritable(project);
-  if (!can(member.role, "run.request")) throw new DevSyncError("forbidden", REFUSED.request);
-  if (!Id.safeParse(taskId).success) throw noSuchTask();
+  requireRole(member.role, "run.request");
+  const id = taskIdOf(taskId);
   // Checked before GitHub is asked, then again with the task's row locked.
-  await requestable(host.db, project, taskId, false);
+  await requestable(host.db, project, id, false);
   const setup = await runSetup(host, ctx);
   if (setup.missing.length > 0) throw new DevSyncError("conflict", setup.missing.join(" "));
   const at = host.clock.now();
   const row = await host.db.transaction(async (tx) => {
-    const current = await requestable(tx, project, taskId, true);
+    const current = await requestable(tx, project, id, true);
     const [created] = await tx
       .insert(run)
       .values({
         workspaceId: project.workspaceId,
         projectId: project.projectId,
-        taskId,
+        taskId: id,
         revision: current.revision,
         requestedByUserId: member.userId,
         createdAt: at,
@@ -488,7 +469,7 @@ async function decideRun(
 ): Promise<Run> {
   const { project, member } = ctx;
   requireWritable(project);
-  if (!can(member.role, "run.decide")) throw new DevSyncError("forbidden", REFUSED.decide);
+  requireRole(member.role, "run.decide");
   const at = host.clock.now();
   const row = await host.db.transaction(async (tx) => {
     const current = await lockRun(tx, project, runId);

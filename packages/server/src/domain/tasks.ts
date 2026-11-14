@@ -11,8 +11,6 @@ import {
   type Author,
   type Comment,
   CommentInput,
-  can,
-  Id,
   type PullRequest,
   PullRequestLink,
   type Revision,
@@ -51,14 +49,22 @@ import {
   type ProjectRef,
   type WorkspaceContext,
 } from "../host";
-import { lockAgentRow, parse, REFUSAL, requireWritable } from "./common";
+import {
+  lockAgentRow,
+  memberAuthor,
+  namesOf,
+  noSuchTask,
+  parse,
+  requireRole,
+  requireWritable,
+  taskIdOf,
+  taskIn,
+} from "./common";
 import { type OutboxActor, outbox } from "./outbox";
 
 /** Who acts on a task: a member on a project route, or an agent through MCP. */
 export type TaskActor = ProjectContext | AgentActor;
 
-/** The name shown for a member who has left the workspace. */
-const FORMER_MEMBER = "Former member";
 /** The name shown for an agent whose row is gone. */
 const REMOVED_AGENT = "Removed agent";
 
@@ -118,7 +124,7 @@ interface Names {
 }
 
 function authorOf(names: Names, userId: string | null, agentId: string | null): Author | null {
-  if (userId) return { kind: "member", userId, name: names.members.get(userId) ?? FORMER_MEMBER };
+  if (userId) return memberAuthor(names.members, userId);
   if (agentId) return { kind: "agent", agentId, name: names.agents.get(agentId) ?? REMOVED_AGENT };
   return null;
 }
@@ -134,30 +140,7 @@ function requiredAuthor(names: Names, userId: string | null, agentId: string | n
 /** Refuses a write to a read-only project, and a member whose role may not change tasks. */
 function requireWrite(actor: TaskActor): void {
   requireWritable(actor.project);
-  if (!isAgent(actor) && !can(actor.member.role, "task.write")) {
-    throw new DevSyncError(
-      "forbidden",
-      "Your role can't change this project's tasks. Ask an Owner or Admin for a role that can.",
-    );
-  }
-}
-
-function noSuchTask(): DevSyncError {
-  return new DevSyncError("not-found", REFUSAL.noSuchTask);
-}
-
-/** A task id from a path or a tool: anything but a UUID is no task of the project's. */
-function taskIdOf(taskId: string): string {
-  if (!Id.safeParse(taskId).success) throw noSuchTask();
-  return taskId;
-}
-
-function inProject(project: Pick<ProjectRef, "workspaceId" | "projectId">, taskId: string): SQL {
-  return and(
-    eq(task.id, taskId),
-    eq(task.projectId, project.projectId),
-    eq(task.workspaceId, project.workspaceId),
-  ) as SQL;
+  if (!isAgent(actor)) requireRole(actor.member.role, "task.write");
 }
 
 function actorIds(actor: TaskActor): NonNullable<OutboxActor> {
@@ -195,7 +178,7 @@ export function selectTasks(db: DevSyncDb, where: SQL | undefined) {
 }
 
 async function loadTask(db: DevSyncDb, project: ProjectRef, taskId: string): Promise<Task> {
-  const [row] = await selectTasks(db, inProject(project, taskId));
+  const [row] = await selectTasks(db, taskIn(project, taskId));
   if (!row) throw noSuchTask();
   return toTask(row.task, row.claimAgentName);
 }
@@ -286,7 +269,7 @@ export async function getTask(
   taskId: string,
 ): Promise<TaskDetail> {
   const { project } = actor;
-  const [found] = await selectTasks(host.db, inProject(project, taskIdOf(taskId)));
+  const [found] = await selectTasks(host.db, taskIn(project, taskIdOf(taskId)));
   if (!found) throw noSuchTask();
   const row = found.task;
   const [revisions, comments, events, pull, members] = await Promise.all([
@@ -336,7 +319,7 @@ export async function getTask(
           .from(agent)
           .where(and(eq(agent.projectId, project.projectId), inArray(agent.id, [...agentIds])));
   const names: Names = {
-    members: new Map(members.map((m) => [m.userId, m.name])),
+    members: namesOf(members),
     agents: new Map(agents.map((a) => [a.id, a.name])),
   };
 
@@ -546,7 +529,7 @@ export async function updateTask(
   const at = host.clock.now();
 
   const result = await host.db.transaction(async (tx) => {
-    const [current] = await tx.select().from(task).where(inProject(project, id)).for("update");
+    const [current] = await tx.select().from(task).where(taskIn(project, id)).for("update");
     if (!current) throw noSuchTask();
     if (agentActor && current.creatorAgentId !== agentActor.agentId) {
       throw new DevSyncError(
@@ -595,7 +578,7 @@ export async function updateTask(
         revision: revised ? current.revision + 1 : current.revision,
         updatedAt: at,
       })
-      .where(and(inProject(project, id), eq(task.version, version)))
+      .where(and(taskIn(project, id), eq(task.version, version)))
       .returning();
     if (!saved) throw new DevSyncError("conflict", TASK_CHANGED);
 
@@ -646,7 +629,7 @@ export async function commentOnTask(
   const { body } = parse(CommentInput, input);
   const { project, member } = ctx;
   const id = taskIdOf(taskId);
-  const [found] = await host.db.select({ id: task.id }).from(task).where(inProject(project, id));
+  const [found] = await host.db.select({ id: task.id }).from(task).where(taskIn(project, id));
   if (!found) throw noSuchTask();
   const [row] = await host.db
     .insert(taskComment)
@@ -687,7 +670,7 @@ export async function linkPullRequest(
     const [current] = await tx
       .select({ pullRequestNumber: task.pullRequestNumber, version: task.version })
       .from(task)
-      .where(inProject(project, id))
+      .where(taskIn(project, id))
       .for("update");
     if (!current) throw noSuchTask();
     if (number !== null) {
@@ -732,7 +715,7 @@ export async function writePullRequestLink(
   await tx
     .update(task)
     .set({ pullRequestNumber: number, version: current.version + 1, updatedAt: at })
-    .where(inProject(project, taskId));
+    .where(taskIn(project, taskId));
   await host.audit(tx, actor, {
     workspaceId: project.workspaceId,
     projectId: project.projectId,

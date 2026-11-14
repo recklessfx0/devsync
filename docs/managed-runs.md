@@ -2,7 +2,7 @@
 
 How DevSync runs Claude Code on a task in the project's own GitHub Actions (story 4, R-8). The
 research behind it is in [research/managed-runs.md](research/managed-runs.md); the host's side is
-`ModuleHost.github` (see [host.md](host.md), "Work in the project's Actions").
+`ModuleHost.github` (see [host.md](host.md), "Managed runs").
 
 ## The flow
 

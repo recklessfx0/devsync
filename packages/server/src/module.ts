@@ -5,13 +5,13 @@
  * (serverModule)"). `ServerModule` is DevSync's copy of the contract's type, over `DevSyncHost`,
  * which the host's `ModuleHost` satisfies; module.test.ts proves both against the contract.
  */
+import { WORKFLOW_FILE } from "@devsync/schemas";
 import type { Hono } from "hono";
 import { migrations } from "./db";
 import type { DevSyncDb, DevSyncHost } from "./host";
 import { projectRoutes, publicRoutes, workspaceRoutes } from "./http";
 import { type DevSyncJob, jobs } from "./jobs";
 import { removeMember, removeProject, removeWorkspace } from "./removal";
-import { WORKFLOW_FILE } from "./workflow";
 
 /** What a module gives the host: the contract's `ServerModule`, over `DevSyncHost`. */
 export interface ServerModule {

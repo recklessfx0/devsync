@@ -4,6 +4,7 @@
  * no test commits one.
  */
 import { randomBytes } from "node:crypto";
+import { API_KEY_SECRET, WORKFLOW_FILE } from "@devsync/schemas";
 import { PGlite } from "@electric-sql/pglite";
 import { drizzle } from "drizzle-orm/pglite";
 import { migrate } from "drizzle-orm/pglite/migrator";
@@ -19,7 +20,6 @@ import type {
   ProjectRef,
   QueueName,
 } from "./host";
-import { API_KEY_SECRET, WORKFLOW_FILE } from "./workflow";
 
 export interface TestDb {
   db: DevSyncDb;

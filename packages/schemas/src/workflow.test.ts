@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { PATCH_ARTIFACT, RESULT_ARTIFACT, WORKFLOW, WORKFLOW_FILE } from "./workflow";
+import {
+  PATCH_ARTIFACT,
+  RESULT_ARTIFACT,
+  WORKFLOW,
+  WORKFLOW_FILE,
+  WORKFLOW_PATH,
+} from "./workflow";
 
 const FAILURES = [
   "agent-failed",
@@ -70,6 +76,7 @@ const expression = (inner: string) => `\${{ ${inner} }}`;
 describe("the managed runs' workflow file", () => {
   it("is devsync.yml, dispatched with exactly the two string inputs", () => {
     expect(WORKFLOW_FILE).toBe("devsync.yml");
+    expect(WORKFLOW_PATH).toBe(".github/workflows/devsync.yml");
     expect(keys(under(lines, /^on:$/))).toEqual(["workflow_dispatch"]);
     const inputs = under(lines, /^ {4}inputs:$/);
     expect(keys(inputs)).toEqual(["run_id", "task"]);

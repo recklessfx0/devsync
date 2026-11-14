@@ -18,6 +18,9 @@ export const LIMITS = {
 /** A positive whole number: a task's revision or version. */
 export const Counter = z.number().int().positive();
 
+/** The largest pull request number DevSync keeps (a PostgreSQL `integer`). */
+export const MAX_PULL_REQUEST = 2_147_483_647;
+
 /** Who wrote or did something: a member (named "Former member" once they left) or an agent. */
 export const Author = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("member"), userId: Id, name: z.string() }),

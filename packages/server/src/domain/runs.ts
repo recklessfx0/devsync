@@ -9,9 +9,14 @@
  * timeline (an outbox event) and audited, in its transaction. Every query filters by the project.
  */
 import {
+  API_KEY_SECRET,
   can,
   checkRunResult,
   Id,
+  PATCH_ARTIFACT,
+  RESULT_ARTIFACT,
+  RESULT_FILE,
+  RUN_TASK_CHANGED,
   type Run,
   RunFailure,
   type RunList,
@@ -19,6 +24,8 @@ import {
   type RunSetup,
   RunUsage,
   UNENDED_RUN_STATUSES,
+  WORKFLOW_FILE,
+  WORKFLOW_PATH,
 } from "@devsync/schemas";
 import { and, asc, desc, eq, inArray, isNotNull, isNull, lte, type SQL } from "drizzle-orm";
 import { z } from "zod";
@@ -34,14 +41,6 @@ import {
   type ProjectContext,
   type ProjectRef,
 } from "../host";
-import {
-  API_KEY_SECRET,
-  PATCH_ARTIFACT,
-  RESULT_ARTIFACT,
-  RESULT_FILE,
-  WORKFLOW_FILE,
-  WORKFLOW_PATH,
-} from "../workflow";
 import { REFUSAL, requireWritable } from "./common";
 import { outbox } from "./outbox";
 import { writePullRequestLink } from "./tasks";
@@ -90,7 +89,7 @@ const REFUSED = {
     "This task already has a run that hasn't ended. Wait for it to finish, or cancel it while it waits for approval.",
   tooLong:
     "This task's requirements are too long for a run: at most 60,000 characters together. Shorten its description or acceptance criteria, then ask for a run.",
-  taskChanged: "The task changed since this run was asked for. Cancel it and ask for a new run.",
+  taskChanged: RUN_TASK_CHANGED,
   decided: "This run was already approved, rejected or cancelled. Reload the task.",
   notCancellable:
     "Only a run waiting for approval can be cancelled here. Cancel a run that already started from the repository's Actions tab.",

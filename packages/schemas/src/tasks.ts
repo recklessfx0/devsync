@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Author, Counter, Id, LIMITS, Timestamp } from "./common";
+import { Author, Counter, Id, LIMITS, MAX_PULL_REQUEST, Timestamp } from "./common";
 import { TaskStatus } from "./lifecycle";
 
 const title = z.string().trim().min(1).max(LIMITS.title);
@@ -29,7 +29,7 @@ export type CommentInput = z.infer<typeof CommentInput>;
 
 /** `PUT /tasks/:taskId/pull-request`: a pull request's number, or null to unlink it. */
 export const PullRequestLink = z.strictObject({
-  number: z.number().int().positive().max(2147483647).nullable(),
+  number: z.number().int().positive().max(MAX_PULL_REQUEST).nullable(),
 });
 export type PullRequestLink = z.infer<typeof PullRequestLink>;
 

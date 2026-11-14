@@ -1,6 +1,7 @@
 import {
   can,
   Id,
+  RUN_TASK_CHANGED,
   Run,
   type RunSetup,
   type RunStatus,
@@ -8,7 +9,7 @@ import {
   type TaskDetail,
   UNENDED_RUN_STATUSES,
   WORKFLOW,
-  WORKFLOW_FILE,
+  WORKFLOW_PATH,
 } from "@devsync/schemas";
 import { useId, useState } from "react";
 import styles from "./devsync.module.css";
@@ -16,13 +17,9 @@ import { authorName, DialogButtons, formatTime, GithubLink, Problem } from "./pa
 import { type DevSyncIcon, useDevSync } from "./provider";
 import { useChange, useRunSetup, useRuns } from "./queries";
 
-/** Where the user adds the workflow file in the repository. */
-const WORKFLOW_PATH = `.github/workflows/${WORKFLOW_FILE}`;
 /** How many changed files show before the rest fold away. */
 const FILES_SHOWN = 10;
 
-/** The server's own words when it refuses approving a run whose task changed. */
-const CHANGED = "The task changed since this run was asked for. Cancel it and ask for a new run.";
 const DECIDERS =
   "An Owner, Admin or Approver approves or rejects it; they or the member who asked for it can cancel it.";
 
@@ -157,7 +154,7 @@ function RunItem({ task, run, onApprove }: { task: TaskDetail; run: Run; onAppro
     // The requester may cancel whatever their role.
     cancel: decide || (mine && !readOnly),
   };
-  const reason = [!can(role, "run.decide") && DECIDERS, changed && CHANGED]
+  const reason = [!can(role, "run.decide") && DECIDERS, changed && RUN_TASK_CHANGED]
     .filter(Boolean)
     .join(" ");
   const describe = (ok: boolean) => (!ok && reason ? why : undefined);
@@ -475,7 +472,7 @@ function Approve({ task, run, onClose }: { task: TaskDetail; run: Run; onClose: 
       {changed ? (
         <p className={`status s-warning ${styles.problem}`}>
           <Icon name="warning" className="i-sm" />
-          {CHANGED}
+          {RUN_TASK_CHANGED}
         </p>
       ) : (
         <>

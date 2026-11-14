@@ -4,7 +4,7 @@
  * checks DevSync makes before keeping any of it.
  */
 import { z } from "zod";
-import { Author, Counter, Id, Timestamp } from "./common";
+import { Author, Counter, Id, MAX_PULL_REQUEST, Timestamp } from "./common";
 
 /** A run's statuses: asked for, approved and waiting to start, in GitHub, and the four ends. */
 export const RunStatus = z.enum([
@@ -20,6 +20,13 @@ export type RunStatus = z.infer<typeof RunStatus>;
 
 /** The statuses of a run that hasn't ended: a task has at most one such run. */
 export const UNENDED_RUN_STATUSES = ["REQUESTED", "QUEUED", "RUNNING"] as const;
+
+/**
+ * Why approving a run is refused once its task is no longer Ready or its requirements changed
+ * since the run was asked for: the server's words, which the task panel shows before it asks.
+ */
+export const RUN_TASK_CHANGED =
+  "The task changed since this run was asked for. Cancel it and ask for a new run.";
 
 /** Why the workflow says a run failed: `result.json`'s `failure`. */
 const WORKFLOW_FAILURES = [
@@ -55,18 +62,19 @@ export type RunFailure = z.infer<typeof RunFailure>;
 
 /** A count of tokens. */
 const Tokens = z.number().int().nonnegative();
-/** Claude Code's client-side estimate of the run's cost, in US dollars. */
-const Cost = z.number().nonnegative();
 
-/** A run's token use and cost, and the models it used: what the task panel shows. */
-export const RunUsage = z.object({
+/** A run's token use and cost, as `result.json` reports them. */
+const TokenUsage = z.object({
   inputTokens: Tokens,
   outputTokens: Tokens,
   cacheCreationInputTokens: Tokens,
   cacheReadInputTokens: Tokens,
-  costUsd: Cost,
-  models: z.array(z.string()),
+  /** Claude Code's client-side estimate of the run's cost, in US dollars. */
+  costUsd: z.number().nonnegative(),
 });
+
+/** A run's token use and cost, and the models it used: what the task panel shows. */
+export const RunUsage = TokenUsage.extend({ models: z.array(z.string()) });
 export type RunUsage = z.infer<typeof RunUsage>;
 
 /** A run, as `GET /tasks/:taskId/runs` and every change to a run answer it. */
@@ -135,13 +143,7 @@ export const RunResult = z
     status: z.enum(["succeeded", "failed"]),
     failure: WorkflowFailure.nullable(),
     changedFiles: z.array(storable(RESULT_LIMITS.path)).max(RESULT_LIMITS.changedFiles),
-    usage: z.object({
-      inputTokens: Tokens,
-      outputTokens: Tokens,
-      cacheCreationInputTokens: Tokens,
-      cacheReadInputTokens: Tokens,
-      costUsd: Cost,
-    }),
+    usage: TokenUsage,
     models: z.array(storable(RESULT_LIMITS.model)).max(RESULT_LIMITS.models),
     pullRequestUrl: z.string().max(2048).nullable(),
     branch: z.string().max(255).nullable(),
@@ -152,9 +154,6 @@ export const RunResult = z
       : result.failure !== null,
   );
 export type RunResult = z.infer<typeof RunResult>;
-
-/** The largest pull request number DevSync keeps (a PostgreSQL `integer`). */
-const MAX_PULL_REQUEST = 2_147_483_647;
 
 /**
  * The number of the pull request at `url` when it is one of the repository `fullName`'s

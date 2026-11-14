@@ -6,11 +6,20 @@
 /** The file's name under `.github/workflows/`: the workflow DevSync dispatches. */
 export const WORKFLOW_FILE = "devsync.yml";
 
+/** Where the user adds it in the repository. */
+export const WORKFLOW_PATH = `.github/workflows/${WORKFLOW_FILE}`;
+
 /** The artifact holding the run's `result.json`, the only one DevSync reads. */
 export const RESULT_ARTIFACT = "devsync-result";
 
+/** The `result.json` file in the `report` job's artifact. */
+export const RESULT_FILE = "result.json";
+
 /** The artifact the `agent` job hands the change over in: the patch and its changed files. */
 export const PATCH_ARTIFACT = "devsync-patch";
+
+/** The Actions secret with the workspace's own Anthropic key. */
+export const API_KEY_SECRET = "ANTHROPIC_API_KEY";
 
 /**
  * The file's text, shown in full for the user to copy. Three jobs: `agent` (Contents read, the

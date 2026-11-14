@@ -11,7 +11,7 @@ import {
 } from "@devsync/schemas";
 import { type FormEvent, useId, useState } from "react";
 import styles from "./devsync.module.css";
-import { DialogButtons, Field, formatTime, Problem } from "./parts";
+import { CopyButton, DialogButtons, Field, formatTime, Problem } from "./parts";
 import { type DevSyncIcon, useDevSync } from "./provider";
 import { useAgents, useChange } from "./queries";
 
@@ -187,8 +187,7 @@ function Register({
 
 /** The token, shown this once: the page keeps it only while the dialog is open. */
 function Token({ agent, token, onClose }: { agent: Agent; token: string; onClose: () => void }) {
-  const { Dialog, Icon } = useDevSync().ui;
-  const [copied, setCopied] = useState(false);
+  const { Dialog } = useDevSync().ui;
   return (
     <Dialog title={`${agent.name}'s token`} icon="robot">
       <p className="sub">
@@ -197,14 +196,7 @@ function Token({ agent, token, onClose }: { agent: Agent; token: string; onClose
       </p>
       <p className={`mono cream ${styles.token}`}>{token}</p>
       <div className={styles.actions}>
-        <button
-          className="btn btn-secondary bordered"
-          type="button"
-          onClick={() => void navigator.clipboard?.writeText(token).then(() => setCopied(true))}
-        >
-          <Icon name={copied ? "check-circle" : "copy"} className="i-sm" />
-          {copied ? "Copied" : "Copy the token"}
-        </button>
+        <CopyButton text={token} label="Copy the token" className="btn btn-secondary bordered" />
         <button className="btn btn-primary" type="button" onClick={onClose}>
           Done
         </button>

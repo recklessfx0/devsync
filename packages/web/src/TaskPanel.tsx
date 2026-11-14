@@ -17,6 +17,7 @@ import styles from "./devsync.module.css";
 import {
   authorName,
   Field,
+  FORMER_MEMBER,
   formatTime,
   GithubLink,
   Problem,
@@ -62,13 +63,16 @@ export function TaskPanel({ taskId, onClose }: { taskId: string; onClose: () => 
   );
 }
 
+/** `PATCH /tasks/:taskId`: an edit, a move or an assignment, against the version it sends. */
+function useTaskUpdate(taskId: string) {
+  return useChange(TaskUpdate, (api, body) => api.send("PATCH", `/tasks/${taskId}`, body, Task));
+}
+
 function TaskBody({ task }: { task: TaskDetail }) {
   const { may } = useDevSync();
   const write = may("task.write");
   const [editing, setEditing] = useState(false);
-  const update = useChange(TaskUpdate, (api, body) =>
-    api.send("PATCH", `/tasks/${task.id}`, body, Task),
-  );
+  const update = useTaskUpdate(task.id);
   // Moves and assignments go with the version last read; a refusal reloads the task.
   const change = (fields: Omit<TaskUpdate, "version">) =>
     update.mutate({ ...fields, version: task.version });
@@ -144,9 +148,7 @@ function TaskBody({ task }: { task: TaskDetail }) {
 function EditRequirements({ task, onDone }: { task: TaskDetail; onDone: () => void }) {
   const [version, setVersion] = useState(task.version);
   const latest = useTask(task.id);
-  const save = useChange(TaskUpdate, (api, body) =>
-    api.send("PATCH", `/tasks/${task.id}`, body, Task),
-  );
+  const save = useTaskUpdate(task.id);
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -238,7 +240,7 @@ function Assignee({
         onChange={(event) => onAssign(event.target.value || null)}
       >
         <option value="">Unassigned</option>
-        {!known && <option value={current}>Former member</option>}
+        {!known && <option value={current}>{FORMER_MEMBER}</option>}
         {members.map((m) => (
           <option key={m.userId} value={m.userId}>
             {m.name}

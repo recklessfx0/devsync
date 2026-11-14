@@ -13,7 +13,7 @@ import {
 } from "@devsync/schemas";
 import { useId, useState } from "react";
 import styles from "./devsync.module.css";
-import { authorName, DialogButtons, formatTime, GithubLink, Problem } from "./parts";
+import { authorName, CopyButton, DialogButtons, formatTime, GithubLink, Problem } from "./parts";
 import { type DevSyncIcon, useDevSync } from "./provider";
 import { useChange, useRunSetup, useRuns } from "./queries";
 
@@ -47,6 +47,13 @@ type Open = { kind: "ask" } | { kind: "approve"; run: Run };
 /** Whether a run hasn't ended: waiting for approval, approved, or in GitHub. */
 function unended(run: Run): boolean {
   return (UNENDED_RUN_STATUSES as readonly RunStatus[]).includes(run.status);
+}
+
+/** `POST /runs/:runId/<action>`: approving, rejecting or cancelling a run. */
+function useRunAction(action: "approve" | "reject" | "cancel") {
+  return useChange(Id, (api, runId) =>
+    api.send("POST", `/runs/${runId}/${action}`, undefined, Run),
+  );
 }
 
 /** Whether the server refuses approving `run`: its task is no longer Ready, or was edited since. */
@@ -139,12 +146,8 @@ function askBlocked(
 function RunItem({ task, run, onApprove }: { task: TaskDetail; run: Run; onApprove: () => void }) {
   const { ui, may, role, userId, readOnly } = useDevSync();
   const why = useId();
-  const reject = useChange(Id, (api, runId) =>
-    api.send("POST", `/runs/${runId}/reject`, undefined, Run),
-  );
-  const cancel = useChange(Id, (api, runId) =>
-    api.send("POST", `/runs/${runId}/cancel`, undefined, Run),
-  );
+  const reject = useRunAction("reject");
+  const cancel = useRunAction("cancel");
   const decide = may("run.decide");
   const mine = run.requestedBy.kind === "member" && run.requestedBy.userId === userId;
   const changed = taskChanged(task, run);
@@ -262,20 +265,15 @@ function Setup({ setup }: { setup: ReturnType<typeof useRunSetup> }) {
 
 /** The workflow file in full, to copy to `.github/workflows/devsync.yml`. */
 function WorkflowFile() {
-  const { Icon } = useDevSync().ui;
-  const [copied, setCopied] = useState(false);
   return (
     <figure className={`${styles.stack} ${styles.workflow}`}>
       <figcaption className={styles.inline}>
         <span className="mono cream">{WORKFLOW_PATH}</span>
-        <button
+        <CopyButton
+          text={WORKFLOW}
+          label="Copy the workflow"
           className="btn btn-sm btn-secondary bordered"
-          type="button"
-          onClick={() => void navigator.clipboard?.writeText(WORKFLOW).then(() => setCopied(true))}
-        >
-          <Icon name={copied ? "check-circle" : "copy"} className="i-sm" />
-          {copied ? "Copied" : "Copy the workflow"}
-        </button>
+        />
       </figcaption>
       <pre className={`mono ${styles.code}`}>{WORKFLOW}</pre>
     </figure>
@@ -451,9 +449,7 @@ function Ask({ task, onClose }: { task: TaskDetail; onClose: () => void }) {
  */
 function Approve({ task, run, onClose }: { task: TaskDetail; run: Run; onClose: () => void }) {
   const { Dialog, Icon } = useDevSync().ui;
-  const approve = useChange(Id, (api, runId) =>
-    api.send("POST", `/runs/${runId}/approve`, undefined, Run),
-  );
+  const approve = useRunAction("approve");
   const changed = taskChanged(task, run);
   return (
     <Dialog

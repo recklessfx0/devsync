@@ -17,31 +17,30 @@ import { useDevSync } from "./provider";
 /** Every 10 seconds while the page is visible (the dashboard refreshes by polling). */
 const LIVE = { refetchInterval: 10_000, refetchIntervalInBackground: false } as const;
 
-/** Keys are namespaced by the mount point, so a project's data never shows on another's tab. */
-function useList<T>(
-  path: string,
-  parse: (api: ReturnType<typeof useDevSync>["api"]) => Promise<T>,
-) {
+/**
+ * `GET path`, parsed with `schema`, refreshed while the page is visible. Keys are namespaced by the
+ * mount point, so a project's data never shows on another's tab.
+ */
+function useLive<S extends z.ZodType>(path: string, schema: S) {
   const { api, apiBase } = useDevSync();
-  return useQuery({ queryKey: ["devsync", apiBase, path], queryFn: () => parse(api), ...LIVE });
+  return useQuery({
+    queryKey: ["devsync", apiBase, path],
+    queryFn: () => api.get(path, schema),
+    ...LIVE,
+  });
 }
 
-export const useTasks = () => useList("/tasks", (api) => api.get("/tasks", TaskList));
-export const useMembers = () => useList("/members", (api) => api.get("/members", MemberList));
-export const useAgents = () => useList("/agents", (api) => api.get("/agents", AgentList));
-export const usePullRequests = () =>
-  useList("/pull-requests", (api) => api.get("/pull-requests", PullRequestList));
+export const useTasks = () => useLive("/tasks", TaskList);
+export const useMembers = () => useLive("/members", MemberList);
+export const useAgents = () => useLive("/agents", AgentList);
+export const usePullRequests = () => useLive("/pull-requests", PullRequestList);
 
-export function useTask(taskId: string) {
-  const path = `/tasks/${encodeURIComponent(taskId)}`;
-  return useList(path, (api) => api.get(path, TaskDetail));
-}
+export const useTask = (taskId: string) =>
+  useLive(`/tasks/${encodeURIComponent(taskId)}`, TaskDetail);
 
 /** A task's runs, newest first (they cost no GitHub call, so they refresh with the panel). */
-export function useRuns(taskId: string) {
-  const path = `/tasks/${encodeURIComponent(taskId)}/runs`;
-  return useList(path, (api) => api.get(path, RunList));
-}
+export const useRuns = (taskId: string) =>
+  useLive(`/tasks/${encodeURIComponent(taskId)}/runs`, RunList);
 
 /**
  * What the repository has of what a run needs. Asking costs several GitHub calls, so it is read
@@ -69,8 +68,7 @@ export function useWorkspaceTasks(filters: {
   if (filters.project) query.set("project", filters.project);
   if (filters.status) query.set("status", filters.status);
   if (filters.mine) query.set("assignee", "me");
-  const path = query.size > 0 ? `/tasks?${query}` : "/tasks";
-  return useList(path, (api) => api.get(path, WorkspaceTaskList));
+  return useLive(query.size > 0 ? `/tasks?${query}` : "/tasks", WorkspaceTaskList);
 }
 
 const INVALID = "Fill in the required fields and keep each within its limit, then try again.";

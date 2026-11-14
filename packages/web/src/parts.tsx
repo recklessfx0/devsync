@@ -1,5 +1,5 @@
 import { type Author, LIMITS, type Member } from "@devsync/schemas";
-import type { ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 import styles from "./devsync.module.css";
 import { useDevSync } from "./provider";
 
@@ -55,6 +55,30 @@ export function Field({ label, children }: { label: string; children: ReactNode 
   );
 }
 
+/** A button that copies `text` to the clipboard, then says it did. */
+export function CopyButton({
+  text,
+  label,
+  className,
+}: {
+  text: string;
+  label: string;
+  className: string;
+}) {
+  const { Icon } = useDevSync().ui;
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      className={className}
+      type="button"
+      onClick={() => void navigator.clipboard?.writeText(text).then(() => setCopied(true))}
+    >
+      <Icon name={copied ? "check-circle" : "copy"} className="i-sm" />
+      {copied ? "Copied" : label}
+    </button>
+  );
+}
+
 /** A dialog's buttons: Cancel, and the action that submits its form. */
 export function DialogButtons({
   label,
@@ -87,10 +111,13 @@ export function authorName(author: Author | null): string {
   return author ? author.name : "GitHub";
 }
 
+/** The name shown for a member who has left the workspace. */
+export const FORMER_MEMBER = "Former member";
+
 /** A member's name by user id; a member who has left is "Former member". */
 export function memberName(members: Member[] | undefined, userId: string): string {
   if (!members) return "";
-  return members.find((m) => m.userId === userId)?.name ?? "Former member";
+  return members.find((m) => m.userId === userId)?.name ?? FORMER_MEMBER;
 }
 
 /** What `RequirementFields` holds. */

@@ -1,7 +1,7 @@
 /**
- * A workspace's routes (docs/host.md, HTTP API), mounted by the host at `/api/w/<workspace>/m/devsync`
- * once DevSync is on for the workspace; its guard sets `c.var.module` with the projects that have
- * DevSync on. Both are reads: every role may.
+ * A workspace's routes (docs/host.md, HTTP API), mounted by the host at
+ * `/api/w/<workspace>/m/devsync` once DevSync is on for the workspace; its guard sets `c.var.module`
+ * with the projects that have DevSync on. Both are reads: every role may.
  */
 import { MemberList, WorkspaceTaskList, WorkspaceTaskListQuery } from "@devsync/schemas";
 import { Hono } from "hono";

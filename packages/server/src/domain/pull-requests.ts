@@ -1,10 +1,11 @@
 /**
- * GitHub facts and the pull requests they report (docs/host.md, Queues). The host forwards each `push` and `pull_request` delivery of a project with
- * DevSync on as a `GithubJob` on the `devsync.github` queue. DevSync applies each delivery once per
- * project (`github_delivery`): it keeps the pull request's latest state (an update older than the
- * stored one changes nothing) and sends the project's live agents branch-updated,
- * pull-request-opened and pull-request-merged signals. A `workflow_run` fact (a managed run
- * GitHub completed) goes to the runs (`applyWorkflowRun`), which apply it once by the run's status.
+ * GitHub facts and the pull requests they report (docs/host.md, Queues). The host forwards each
+ * `push` and `pull_request` delivery of a project with DevSync on as a `GithubJob` on the
+ * `devsync.github` queue. DevSync applies each delivery once per project (`github_delivery`): it
+ * keeps the pull request's latest state (an update older than the stored one changes nothing) and
+ * sends the project's live agents branch-updated, pull-request-opened and pull-request-merged
+ * signals. A `workflow_run` fact (a managed run GitHub completed) goes to the runs
+ * (`applyWorkflowRun`), which apply it once by the run's status.
  */
 import { randomUUID } from "node:crypto";
 import type { PullRequestList } from "@devsync/schemas";

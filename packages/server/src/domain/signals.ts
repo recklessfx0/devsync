@@ -1,8 +1,8 @@
 /**
- * Signals: an agent's inbox (docs/host.md, MCP for coding agents). A
- * member messages an agent, peer agents signal each other (one follow-up per signal, four replies a
- * chain, 20 new signals a minute), and the outbox and GitHub's facts deliver the project's events.
- * An agent reads its oldest unacknowledged signals and acknowledges each once processed.
+ * Signals: an agent's inbox (docs/host.md, MCP for coding agents). A member messages an agent,
+ * peer agents signal each other (one follow-up per signal, four replies a chain, 20 new signals a
+ * minute), and the outbox and GitHub's facts deliver the project's events. An agent reads its
+ * oldest unacknowledged signals and acknowledges each once processed.
  */
 import {
   AgentMessage,

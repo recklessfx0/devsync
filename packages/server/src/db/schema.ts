@@ -297,20 +297,8 @@ export const run = devsyncSchema.table(
 );
 
 export type TaskRow = typeof task.$inferSelect;
-export type NewTaskRow = typeof task.$inferInsert;
-export type TaskRevisionRow = typeof taskRevision.$inferSelect;
-export type NewTaskRevisionRow = typeof taskRevision.$inferInsert;
-export type TaskCommentRow = typeof taskComment.$inferSelect;
-export type NewTaskCommentRow = typeof taskComment.$inferInsert;
 export type AgentRow = typeof agent.$inferSelect;
-export type NewAgentRow = typeof agent.$inferInsert;
 export type SignalRow = typeof signal.$inferSelect;
-export type NewSignalRow = typeof signal.$inferInsert;
 export type OutboxEventRow = typeof outboxEvent.$inferSelect;
-export type NewOutboxEventRow = typeof outboxEvent.$inferInsert;
 export type PullRequestRow = typeof pullRequest.$inferSelect;
-export type NewPullRequestRow = typeof pullRequest.$inferInsert;
-export type GithubDeliveryRow = typeof githubDelivery.$inferSelect;
-export type NewGithubDeliveryRow = typeof githubDelivery.$inferInsert;
 export type RunRow = typeof run.$inferSelect;
-export type NewRunRow = typeof run.$inferInsert;

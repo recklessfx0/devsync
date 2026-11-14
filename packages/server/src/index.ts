@@ -1,8 +1,8 @@
 /**
  * DevSync's server half, for its host (docs/host.md): `serverModule`, the entry the host imports;
  * the interface the host implements, the routes it mounts, the queues its worker runs, the
- * migrations it applies, the removal hooks it calls, and the tables. Nothing else: the domain is reached through the routes and the queues, and tests
- * import internals from their own modules.
+ * migrations it applies, the removal hooks it calls, and the tables. Nothing else: the domain is
+ * reached through the routes and the queues, and tests import internals from their own modules.
  */
 export {
   agent,

@@ -1,6 +1,7 @@
 /**
- * Agents: registration, tokens and authentication (docs/host.md, MCP for coding agents). An Owner or Admin registers an agent for a project; its bearer token is shown
- * once and DevSync keeps only its SHA-256. A token lasts 24 hours and can be rotated or revoked.
+ * Agents: registration, tokens and authentication (docs/host.md, MCP for coding agents). An Owner
+ * or Admin registers an agent for a project; its bearer token is shown once and DevSync keeps only
+ * its SHA-256. A token lasts 24 hours and can be rotated or revoked.
  */
 import { createHash, randomBytes } from "node:crypto";
 import { type Agent, AgentInput, type AgentList, type AgentWithToken, Id } from "@devsync/schemas";
@@ -184,8 +185,8 @@ export async function listAgents(host: DevSyncHost, ctx: ProjectContext): Promis
 /**
  * The agent a bearer token belongs to, and its project as the host answers it now: refused alike
  * (`unauthenticated`) when the token is malformed, unknown, expired or revoked, and `forbidden`
- * when the token is live but its project is gone or has DevSync off (the spec's edge case). Records
- * when the agent was last seen.
+ * when the token is live but its project is gone or has DevSync off (docs/host.md, MCP for coding
+ * agents). Records when the agent was last seen.
  */
 export async function authenticateAgent(host: DevSyncHost, token: string): Promise<AgentActor> {
   const refused = () => new DevSyncError("unauthenticated", REFUSAL.unauthenticated);

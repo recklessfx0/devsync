@@ -53,7 +53,7 @@ import { outbox } from "./outbox";
 import { writePullRequestLink } from "./tasks";
 
 /** The most characters the `task` input holds: GitHub takes 65,535 for all of a run's inputs. */
-export const TASK_INPUT_LIMIT = 60_000;
+const TASK_INPUT_LIMIT = 60_000;
 /**
  * How long after its dispatch a run may stay in GitHub before the schedule reads it once more and
  * ends it.

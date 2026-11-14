@@ -1,9 +1,9 @@
 /**
  * Tasks: create, read, edit, move, assign, comment and link a pull request, for a project's members
- * (a `ProjectContext`) and its agents (an `AgentActor`). The rules:
- * the lifecycle, the version check, a revision per requirements change, a claimed task's status
- * changed only by its claim, an agent's `requestId` idempotency, and an outbox event per change
- * recorded in its transaction. Every query filters by the project.
+ * (a `ProjectContext`) and its agents (an `AgentActor`). The rules: the lifecycle, the version
+ * check, a revision per requirements change, a claimed task's status changed only by its claim, an
+ * agent's `requestId` idempotency, and an outbox event per change recorded in its transaction.
+ * Every query filters by the project.
  */
 import {
   AgentTaskInput,

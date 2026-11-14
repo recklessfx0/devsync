@@ -1,8 +1,9 @@
 /**
- * Delivering due outbox events to the agents' inboxes (docs/host.md, Queues): the `devsync.outbox` queue calls `deliverDue` until it answers 0.
- * Each event reaches each of its recipients once: the project's agents that weren't revoked and
- * existed when it happened, but the agent that caused it. A review request carries its id, for the
- * peer's decision. An event whose delivery fails is retried later, backed off up to 10 minutes.
+ * Delivering due outbox events to the agents' inboxes (docs/host.md, Queues): the `devsync.outbox`
+ * queue calls `deliverDue` until it answers 0. Each event reaches each of its recipients once: the
+ * project's agents that weren't revoked and existed when it happened, but the agent that caused it.
+ * A review request carries its id, for the peer's decision. An event whose delivery fails is
+ * retried later, backed off up to 10 minutes.
  */
 import { createHash } from "node:crypto";
 import { and, asc, eq, isNull, lte, ne, type SQL } from "drizzle-orm";
@@ -19,7 +20,8 @@ function outboxBackoffSeconds(attempts: number): number {
 
 /**
  * The idempotency key of an event's signal to one recipient: a UUID derived from both ids
- * (`outbox:<event>:<recipient>` as a UUID, since the column holds UUIDs), so a delivery never doubles a signal.
+ * (`outbox:<event>:<recipient>` as a UUID, since the column holds UUIDs), so a delivery never
+ * doubles a signal.
  */
 function deliveryKey(eventId: string, recipientId: string): string {
   const hex = createHash("sha256").update(`outbox:${eventId}:${recipientId}`).digest("hex");

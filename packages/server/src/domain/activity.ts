@@ -1,10 +1,10 @@
 /**
  * Agents' reports on their claims and peers' review decisions (docs/host.md, MCP for coding
- * agents). Each is an outbox event of the task: on its timeline, and
- * delivered to the project's other agents. A report or decision is idempotent by its `requestId`
- * (the same id for another report is refused). A blocker ends the claim and moves the task to
- * Blocked, a review request to Review; a peer's "changes requested" returns it to Ready, and an
- * approval leaves completion to a member.
+ * agents). Each is an outbox event of the task: on its timeline, and delivered to the project's
+ * other agents. A report or decision is idempotent by its `requestId` (the same id for another
+ * report is refused). A blocker ends the claim and moves the task to Blocked, a review request to
+ * Review; a peer's "changes requested" returns it to Ready, and an approval leaves completion to a
+ * member.
  */
 import { ReviewDecisionInput, TaskActivityInput } from "@devsync/schemas";
 import { and, desc, eq, sql } from "drizzle-orm";

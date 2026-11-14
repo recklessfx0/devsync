@@ -5,6 +5,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from
 import { type RunRow, run, task } from "../db";
 import type { GithubFailure, Member, ProjectContext, ProjectRef } from "../host";
 import { jobs } from "../jobs";
+import { setClock } from "../test/helpers";
 import {
   artifactFiles,
   createTestDb,
@@ -82,10 +83,6 @@ function setup(db = testDb.db) {
 }
 
 type Setup = ReturnType<typeof setup>;
-
-function setClock(host: FakeHost, at: number) {
-  host.clock = { now: () => new Date(at) };
-}
 
 /** A task moved to Ready by the owner. */
 async function readyTask(s: Setup, fields = requirements, on: ProjectRef = s.project) {

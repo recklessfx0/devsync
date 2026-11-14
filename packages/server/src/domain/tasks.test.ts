@@ -3,13 +3,8 @@ import { Task, TaskDetail, WorkspaceTaskList } from "@devsync/schemas";
 import { and, eq } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { agent, outboxEvent, pullRequest, task, taskRevision } from "../db";
-import {
-  type AgentActor,
-  DevSyncError,
-  type Member,
-  type ProjectContext,
-  type ProjectRef,
-} from "../host";
+import type { AgentActor, Member, ProjectContext, ProjectRef } from "../host";
+import { refusal } from "../test/helpers";
 import { createTestDb, type FakeHost, fakeHost, fakeToken, type TestDb } from "../testing";
 import {
   commentOnTask,
@@ -114,15 +109,6 @@ async function seedPullRequest(project: ProjectRef, number: number) {
     headSha: "a".repeat(40),
     sourceUpdatedAt: new Date("2026-02-28T00:00:00.000Z"),
   });
-}
-
-async function refusal(promise: Promise<unknown>): Promise<DevSyncError> {
-  const error = await promise.then(
-    () => null,
-    (e: unknown) => e,
-  );
-  expect(error).toBeInstanceOf(DevSyncError);
-  return error as DevSyncError;
 }
 
 async function events(taskId: string) {

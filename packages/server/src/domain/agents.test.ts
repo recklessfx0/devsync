@@ -3,15 +3,9 @@ import { AgentList, AgentWithToken, type Role } from "@devsync/schemas";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { agent } from "../db";
-import { DevSyncError, type ErrorCode, type ProjectContext, type ProjectRef } from "../host";
-import {
-  createTestDb,
-  FAKE_NOW,
-  type FakeHost,
-  fakeHost,
-  fakeToken,
-  type TestDb,
-} from "../testing";
+import type { ProjectContext, ProjectRef } from "../host";
+import { refusal, setClock } from "../test/helpers";
+import { createTestDb, FAKE_NOW, fakeHost, fakeToken, type TestDb } from "../testing";
 import { authenticateAgent, listAgents, registerAgent, revokeAgent, rotateAgent } from "./agents";
 
 const HOUR = 60 * 60 * 1000;
@@ -48,20 +42,6 @@ function setup() {
     member: members[roles.indexOf(role)] as ProjectContext["member"],
   });
   return { host, project, other, as };
-}
-
-function setClock(host: FakeHost, at: number) {
-  host.clock = { now: () => new Date(at) };
-}
-
-async function refusal(promise: Promise<unknown>, code: ErrorCode): Promise<DevSyncError> {
-  const error = await promise.then(
-    () => null,
-    (e: unknown) => e,
-  );
-  expect(error).toBeInstanceOf(DevSyncError);
-  expect((error as DevSyncError).code).toBe(code);
-  return error as DevSyncError;
 }
 
 const sha256 = (value: string) => createHash("sha256").update(value).digest("hex");

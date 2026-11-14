@@ -2,14 +2,9 @@ import { AgentMessageReceipt, type Role, Task } from "@devsync/schemas";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { signal, task } from "../db";
-import {
-  type AgentActor,
-  DevSyncError,
-  type ErrorCode,
-  type ProjectContext,
-  type ProjectRef,
-} from "../host";
-import { createTestDb, FAKE_NOW, type FakeHost, fakeHost, type TestDb } from "../testing";
+import type { AgentActor, ProjectContext, ProjectRef } from "../host";
+import { refusal, setClock } from "../test/helpers";
+import { createTestDb, FAKE_NOW, fakeHost, type TestDb } from "../testing";
 import { authenticateAgent, registerAgent, revokeAgent, rotateAgent } from "./agents";
 import { deliverDue } from "./delivery";
 import { outbox } from "./outbox";
@@ -59,20 +54,6 @@ async function setup() {
   const claude = await register("Claude", "CLAUDE");
   const outsider = await register("Outsider", "CODEX", other);
   return { host, project, other, as, codex, claude, outsider };
-}
-
-function setClock(host: FakeHost, at: number) {
-  host.clock = { now: () => new Date(at) };
-}
-
-async function refusal(promise: Promise<unknown>, code: ErrorCode): Promise<DevSyncError> {
-  const error = await promise.then(
-    () => null,
-    (e: unknown) => e,
-  );
-  expect(error).toBeInstanceOf(DevSyncError);
-  expect((error as DevSyncError).code).toBe(code);
-  return error as DevSyncError;
 }
 
 const readOnly = (actor: AgentActor): AgentActor => ({

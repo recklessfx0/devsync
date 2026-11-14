@@ -2,7 +2,8 @@ import { and, eq, sql } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { outboxEvent, signal, task } from "../db";
 import type { ProjectRef } from "../host";
-import { createTestDb, FAKE_NOW, type FakeHost, fakeHost, type TestDb } from "../testing";
+import { setClock } from "../test/helpers";
+import { createTestDb, FAKE_NOW, fakeHost, type TestDb } from "../testing";
 import { requestReview } from "./activity";
 import { authenticateAgent, registerAgent, revokeAgent } from "./agents";
 import { claimTask } from "./claims";
@@ -23,10 +24,6 @@ beforeEach(async () => {
 afterEach(async () => {
   await testDb.close();
 });
-
-function setClock(host: FakeHost, at: number) {
-  host.clock = { now: () => new Date(at) };
-}
 
 /** A project with two live agents and a revoked one, and another project with an agent. */
 async function setup() {

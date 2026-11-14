@@ -10,6 +10,7 @@ import { deliverDue } from "../domain/delivery";
 import { pendingSignals, publishSignal } from "../domain/signals";
 import { createTask, getTask, updateTask } from "../domain/tasks";
 import type { AgentActor, Member, ProjectContext, ProjectRef } from "../host";
+import { setClock } from "../test/helpers";
 import { createTestDb, FAKE_NOW, fakeHost, fakeToken, type TestDb } from "../testing";
 import { publicRoutes } from "./index";
 
@@ -104,8 +105,7 @@ async function setup() {
   /** Moves the clock a second on, so each step's events are ordered. */
   const tick = () => {
     now += 1000;
-    const at = now;
-    host.clock = { now: () => new Date(at) };
+    setClock(host, now);
   };
   return {
     host,

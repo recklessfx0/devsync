@@ -1,7 +1,8 @@
 import { and, asc, eq, sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { outboxEvent, task } from "../db";
-import { type AgentActor, DevSyncError, type ErrorCode, type ProjectRef } from "../host";
+import type { AgentActor, ProjectRef } from "../host";
+import { refusal, setClock } from "../test/helpers";
 import { createTestDb, FAKE_NOW, type FakeHost, fakeHost, type TestDb } from "../testing";
 import { reportBlocker, reportProgress, requestReview, submitReview } from "./activity";
 import { authenticateAgent, registerAgent } from "./agents";
@@ -66,20 +67,9 @@ async function setup() {
   /** Moves the clock a second on, so each step's events are ordered. */
   const tick = () => {
     now += SECOND;
-    const at = now;
-    host.clock = { now: () => new Date(at) };
+    setClock(host, now);
   };
   return { host, project, codex, claude, outsider, taskId: created.id, tick };
-}
-
-async function refusal(promise: Promise<unknown>, code: ErrorCode): Promise<DevSyncError> {
-  const error = await promise.then(
-    () => null,
-    (e: unknown) => e,
-  );
-  expect(error).toBeInstanceOf(DevSyncError);
-  expect((error as DevSyncError).code).toBe(code);
-  return error as DevSyncError;
 }
 
 async function readTask(id: string) {

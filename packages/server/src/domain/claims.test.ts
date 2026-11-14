@@ -1,8 +1,9 @@
 import { eq, sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { task } from "../db";
-import { type AgentActor, DevSyncError, type ErrorCode, type ProjectRef } from "../host";
-import { createTestDb, FAKE_NOW, type FakeHost, fakeHost, type TestDb } from "../testing";
+import type { AgentActor, DevSyncError, ProjectRef } from "../host";
+import { refusal, setClock } from "../test/helpers";
+import { createTestDb, FAKE_NOW, fakeHost, type TestDb } from "../testing";
 import { authenticateAgent, registerAgent } from "./agents";
 import { claimTask, releaseTask, renewTaskClaim } from "./claims";
 
@@ -61,20 +62,6 @@ async function setup() {
     .returning();
   if (!created) throw new Error("no task");
   return { host, agents, outsider, taskId: created.id };
-}
-
-function setClock(host: FakeHost, at: number) {
-  host.clock = { now: () => new Date(at) };
-}
-
-async function refusal(promise: Promise<unknown>, code: ErrorCode): Promise<DevSyncError> {
-  const error = await promise.then(
-    () => null,
-    (e: unknown) => e,
-  );
-  expect(error).toBeInstanceOf(DevSyncError);
-  expect((error as DevSyncError).code).toBe(code);
-  return error as DevSyncError;
 }
 
 async function readTask(id: string) {

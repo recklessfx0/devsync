@@ -2,7 +2,8 @@ import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { agent, githubDelivery, pullRequest, signal } from "../db";
 import type { ProjectRef } from "../host";
-import { createTestDb, FAKE_NOW, type FakeHost, fakeHost, type TestDb } from "../testing";
+import { setClock } from "../test/helpers";
+import { createTestDb, FAKE_NOW, fakeHost, type TestDb } from "../testing";
 import { registerAgent, revokeAgent } from "./agents";
 import { applyGithubFact, type GithubFact, listPullRequests } from "./pull-requests";
 
@@ -17,10 +18,6 @@ beforeAll(async () => {
 afterAll(async () => {
   await testDb.close();
 });
-
-function setClock(host: FakeHost, at: number) {
-  host.clock = { now: () => new Date(at) };
-}
 
 function newProject(fullName = "acme/app"): ProjectRef {
   return {

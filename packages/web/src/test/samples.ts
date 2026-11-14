@@ -10,7 +10,7 @@ export const members: Member[] = [
   { userId: BEN, name: "Ben Okafor", role: "developer" },
 ];
 
-const at = "2026-11-13T08:12:00Z";
+export const at = "2026-11-13T08:12:00Z";
 
 export function task(n: number, fields: Partial<Task> = {}): Task {
   return {
@@ -57,7 +57,7 @@ export const pullRequests: PullRequest[] = [
   },
 ];
 
-const ana = { kind: "member", userId: ME, name: "Ana Lima" } as const;
+export const ana = { kind: "member", userId: ME, name: "Ana Lima" } as const;
 const builder = { kind: "agent", agentId: BUILDER, name: "Builder" } as const;
 
 export const detail: TaskDetail = {

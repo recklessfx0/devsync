@@ -6,8 +6,10 @@ import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ProjectTab } from "./ProjectTab";
 import { TaskPanel } from "./TaskPanel";
-import { ME, type Reply, renderWith, type Sent } from "./test/render";
+import { button, type Reply, renderWith, type Sent } from "./test/render";
 import {
+  ana,
+  at,
   detail,
   members,
   pullRequests,
@@ -23,8 +25,6 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-const at = "2026-11-13T08:12:00Z";
-const ana = { kind: "member", userId: ME, name: "Ana Lima" } as const;
 const RUNS = `/tasks/${detail.id}/runs`;
 const GITHUB_RUN = "https://github.com/acme/shop/actions/runs/9001";
 const CHANGED = "The task changed since this run was asked for. Cancel it and ask for a new run.";
@@ -67,9 +67,6 @@ async function section() {
   );
   return runs;
 }
-
-const button = (name: string, scope: HTMLElement) =>
-  within(scope).getByRole("button", { name }) as HTMLButtonElement;
 
 /** What a disabled button says about why: the text its `aria-describedby` names. */
 function reason(element: HTMLElement): string | null {

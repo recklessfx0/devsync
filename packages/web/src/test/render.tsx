@@ -1,6 +1,6 @@
 import type { Role } from "@devsync/schemas";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render } from "@testing-library/react";
+import { render, within } from "@testing-library/react";
 import type { ReactElement } from "react";
 import { DevSyncProvider, type DevSyncUi } from "../provider";
 
@@ -93,6 +93,10 @@ export function renderWith(
   );
   return fake;
 }
+
+/** The button named `name` in `scope` (the whole page by default). */
+export const button = (name: string, scope: HTMLElement = document.body) =>
+  within(scope).getByRole("button", { name }) as HTMLButtonElement;
 
 /** A UUID for test data, `n` from 1 to 99. */
 export function id(n: number): string {

@@ -2,7 +2,7 @@ import { cleanup, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "vitest";
 import { ProjectTab } from "./ProjectTab";
-import { id, type Reply, renderWith } from "./test/render";
+import { button, id, type Reply, renderWith } from "./test/render";
 import { agent, members, tasks } from "./test/samples";
 
 afterEach(cleanup);
@@ -24,9 +24,6 @@ function show(
     },
   });
 }
-
-const button = (name: string, scope: HTMLElement = document.body) =>
-  within(scope).getByRole("button", { name }) as HTMLButtonElement;
 
 describe("the Agents card", () => {
   it("registers an agent and shows its token once, with a copy button", async () => {
